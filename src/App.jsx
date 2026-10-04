@@ -1,9 +1,25 @@
 import { useState, useEffect } from 'react'
 
+// Note colors: Tailwind classes poori likhni padti hain, isliye object me rakhe hain
+const COLORS = [
+  { name: 'yellow', bg: 'bg-yellow-200' },
+  { name: 'pink', bg: 'bg-pink-200' },
+  { name: 'green', bg: 'bg-green-200' },
+  { name: 'blue', bg: 'bg-sky-200' },
+  { name: 'purple', bg: 'bg-purple-200' },
+  { name: 'orange', bg: 'bg-orange-200' },
+]
+
+const getColorClass = (name) => {
+  const found = COLORS.find((c) => c.name === name)
+  return found ? found.bg : COLORS[0].bg
+}
+
 const App = () => {
 
   const [title, setTitle] = useState('')
   const [details, setDetails] = useState('')
+  const [color, setColor] = useState('yellow')
   const [search, setSearch] = useState('')
   const [editIndex, setEditIndex] = useState(null)
 
@@ -33,6 +49,13 @@ const App = () => {
     })
   }
 
+  const resetForm = () => {
+    setEditIndex(null)
+    setTitle('')
+    setDetails('')
+    setColor('yellow')
+  }
+
   const submitHandler = (e) => {
     e.preventDefault()
 
@@ -45,22 +68,21 @@ const App = () => {
     const copyTask = [...task]
 
     if (editIndex !== null) {
-      // Edit mode: title/details update karo, pin aur date same rehne do
-      copyTask[editIndex] = { ...copyTask[editIndex], title, details }
-      setEditIndex(null)
+      // Edit mode: title, details, color update karo. Pin aur date same rehte hain
+      copyTask[editIndex] = { ...copyTask[editIndex], title, details, color }
     } else {
-      // Naya note add karo (pinned false, date abhi ki)
+      // Naya note add karo
       copyTask.push({
         title,
         details,
+        color,
         pinned: false,
         date: new Date().toISOString(),
       })
     }
 
     setTask(copyTask)
-    setTitle('')
-    setDetails('')
+    resetForm()
   }
 
   const deleteNote = (idx) => {
@@ -70,9 +92,7 @@ const App = () => {
 
     // Agar edit hota hua note delete ho gaya to form reset karo
     if (editIndex === idx) {
-      setEditIndex(null)
-      setTitle('')
-      setDetails('')
+      resetForm()
     } else if (editIndex !== null && idx < editIndex) {
       setEditIndex(editIndex - 1)
     }
@@ -81,19 +101,14 @@ const App = () => {
   const editNote = (idx) => {
     setTitle(task[idx].title)
     setDetails(task[idx].details)
+    setColor(task[idx].color || 'yellow')
     setEditIndex(idx)
-  }
-
-  const cancelEdit = () => {
-    setEditIndex(null)
-    setTitle('')
-    setDetails('')
   }
 
   const clearAll = () => {
     if (window.confirm('Delete all notes?')) {
       setTask([])
-      cancelEdit()
+      resetForm()
     }
   }
 
@@ -149,6 +164,22 @@ const App = () => {
           }}
         />
 
+        {/* COLOR PICKER */}
+        <div className='flex items-center gap-3'>
+          <span className='font-medium'>Note color</span>
+          {COLORS.map((c) => (
+            <button
+              key={c.name}
+              type="button"
+              title={c.name}
+              onClick={() => {
+                setColor(c.name)
+              }}
+              className={`h-7 w-7 rounded-full cursor-pointer active:scale-90 ${c.bg} ${color === c.name ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : ''}`}
+            />
+          ))}
+        </div>
+
         <button
           className='bg-white active:scale-95 font-medium w-full outline-none  text-black px-5 py-2 rounded'
         >
@@ -158,7 +189,7 @@ const App = () => {
         {editIndex !== null && (
           <button
             type="button"
-            onClick={cancelEdit}
+            onClick={resetForm}
             className='border-2 active:scale-95 font-medium w-full outline-none px-5 py-2 rounded'
           >
             Cancel
@@ -206,7 +237,7 @@ const App = () => {
 
             return <div
               key={elem.idx}
-              className={`flex justify-between flex-col items-start relative h-56 w-40 bg-cover rounded-xl text-black pt-9 pb-4 px-4 bg-[url('https://static.vecteezy.com/system/resources/previews/037/152/677/non_2x/sticky-note-paper-background-free-png.png')] ${elem.pinned ? 'ring-4 ring-yellow-400' : ''}`}
+              className={`flex justify-between flex-col items-start relative h-56 w-40 rounded-xl shadow-lg text-black pt-9 pb-4 px-4 ${getColorClass(elem.color)} ${elem.pinned ? 'ring-4 ring-white' : ''}`}
             >
 
               {/* PIN BUTTON */}
