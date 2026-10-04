@@ -22,6 +22,17 @@ const App = () => {
     localStorage.setItem('notes', JSON.stringify(task))
   }, [task])
 
+  // Date ko readable format me badalne ka function
+  const formatDate = (iso) => {
+    if (!iso) return ''
+    return new Date(iso).toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
   const submitHandler = (e) => {
     e.preventDefault()
 
@@ -34,12 +45,17 @@ const App = () => {
     const copyTask = [...task]
 
     if (editIndex !== null) {
-      // Edit mode: purana note update karo
-      copyTask[editIndex] = { title, details }
+      // Edit mode: title/details update karo, pin aur date same rehne do
+      copyTask[editIndex] = { ...copyTask[editIndex], title, details }
       setEditIndex(null)
     } else {
-      // Naya note add karo
-      copyTask.push({ title, details })
+      // Naya note add karo (pinned false, date abhi ki)
+      copyTask.push({
+        title,
+        details,
+        pinned: false,
+        date: new Date().toISOString(),
+      })
     }
 
     setTask(copyTask)
@@ -81,7 +97,15 @@ const App = () => {
     }
   }
 
-  // Search: original index bhi saath rakhte hain taaki edit/delete sahi note par chale
+  // Pin / Unpin toggle
+  const togglePin = (idx) => {
+    const copyTask = [...task]
+    copyTask[idx] = { ...copyTask[idx], pinned: !copyTask[idx].pinned }
+    setTask(copyTask)
+  }
+
+  // Search + pinned notes sabse upar
+  // Original index (idx) saath rakhte hain taaki edit/delete/pin sahi note par chale
   const filteredNotes = task
     .map((elem, idx) => ({ ...elem, idx }))
     .filter((elem) => {
@@ -91,6 +115,7 @@ const App = () => {
         elem.details.toLowerCase().includes(q)
       )
     })
+    .sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned))
 
   return (
     <div className='h-screen lg:flex bg-black text-white'>
@@ -179,18 +204,42 @@ const App = () => {
 
           {filteredNotes.map(function (elem) {
 
-            return <div key={elem.idx} className=" flex justify-between flex-col items-start relative h-52 w-40 bg-cover rounded-xl text-black pt-9 pb-4 px-4 bg-[url('https://static.vecteezy.com/system/resources/previews/037/152/677/non_2x/sticky-note-paper-background-free-png.png')]">
-              <div className='overflow-hidden'>
+            return <div
+              key={elem.idx}
+              className={`flex justify-between flex-col items-start relative h-56 w-40 bg-cover rounded-xl text-black pt-9 pb-4 px-4 bg-[url('https://static.vecteezy.com/system/resources/previews/037/152/677/non_2x/sticky-note-paper-background-free-png.png')] ${elem.pinned ? 'ring-4 ring-yellow-400' : ''}`}
+            >
+
+              {/* PIN BUTTON */}
+              <button
+                onClick={() => {
+                  togglePin(elem.idx)
+                }}
+                title={elem.pinned ? 'Unpin' : 'Pin'}
+                className={`absolute top-2 right-2 cursor-pointer text-lg active:scale-90 ${elem.pinned ? '' : 'opacity-40 hover:opacity-100'}`}
+              >
+                📌
+              </button>
+
+              <div className='overflow-hidden w-full'>
                 <h3 className='leading-tight text-lg font-bold'>{elem.title}</h3>
                 <p className='mt-2 leading-tight text-xs font-semibold text-gray-600'>{elem.details}</p>
               </div>
-              <div className='flex gap-2 w-full'>
-                <button onClick={() => {
-                  editNote(elem.idx)
-                }} className='w-1/2 cursor-pointer active:scale-95 bg-blue-500 py-1 text-xs rounded font-bold text-white'>Edit</button>
-                <button onClick={() => {
-                  deleteNote(elem.idx)
-                }} className='w-1/2 cursor-pointer active:scale-95 bg-red-500 py-1 text-xs rounded font-bold text-white'>Delete</button>
+
+              <div className='w-full'>
+                {/* DATE */}
+                {elem.date && (
+                  <p className='text-[10px] font-semibold text-gray-500 mb-1'>
+                    {formatDate(elem.date)}
+                  </p>
+                )}
+                <div className='flex gap-2 w-full'>
+                  <button onClick={() => {
+                    editNote(elem.idx)
+                  }} className='w-1/2 cursor-pointer active:scale-95 bg-blue-500 py-1 text-xs rounded font-bold text-white'>Edit</button>
+                  <button onClick={() => {
+                    deleteNote(elem.idx)
+                  }} className='w-1/2 cursor-pointer active:scale-95 bg-red-500 py-1 text-xs rounded font-bold text-white'>Delete</button>
+                </div>
               </div>
             </div>
           })}
